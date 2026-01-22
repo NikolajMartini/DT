@@ -55,16 +55,19 @@
             font-weight: 600;
         }
 
-        input[type="text"] {
+        textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid #ddd;
             border-radius: 8px;
             font-size: 16px;
+            font-family: inherit;
             transition: border-color 0.3s;
+            resize: vertical;
+            min-height: 80px;
         }
 
-        input[type="text"]:focus {
+        textarea:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -82,6 +85,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s, box-shadow 0.3s;
+            min-height: 120px;
         }
 
         .language-card:hover {
@@ -110,6 +114,11 @@
             font-style: italic;
         }
 
+        .translation.loading {
+            color: #999;
+            font-style: normal;
+        }
+
         .button {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -120,15 +129,27 @@
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             margin-top: 15px;
+            width: 100%;
         }
 
-        .button:hover {
+        .button:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .button:active {
+        .button:active:not(:disabled) {
             transform: translateY(0);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: #d32f2f;
+            font-size: 0.9em;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -139,8 +160,9 @@
         
         <div class="input-section">
             <label for="sentenceInput">Enter your sentence in Danish:</label>
-            <input type="text" id="sentenceInput" placeholder="e.g., Jeg elsker at lære sprog" value="Jeg elsker at lære sprog">
-            <button class="button" onclick="translateSentence()">Translate</button>
+            <textarea id="sentenceInput" placeholder="e.g., Jeg elsker at lære sprog">Jeg elsker at lære sprog</textarea>
+            <button class="button" id="translateBtn" onclick="translateSentence()">Translate</button>
+            <div class="error" id="errorMsg"></div>
         </div>
 
         <div class="languages-grid" id="translationsGrid">
@@ -164,53 +186,85 @@
     </div>
 
     <script>
-        const translations = {
-            "jeg elsker at lære sprog": {
-                swedish: "Jag älskar att lära mig språk",
-                english: "I love learning languages",
-                german: "Ich liebe es, Sprachen zu lernen",
-                french: "J'adore apprendre les langues"
-            },
-            "hej verden": {
-                swedish: "Hej världen",
-                english: "Hello world",
-                german: "Hallo Welt",
-                french: "Bonjour le monde"
-            },
-            "godmorgen": {
-                swedish: "God morgon",
-                english: "Good morning",
-                german: "Guten Morgen",
-                french: "Bonjour"
-            },
-            "mange tak": {
-                swedish: "Tack så mycket",
-                english: "Thank you very much",
-                german: "Vielen Dank",
-                french: "Merci beaucoup"
-            },
-            "hvordan har du det": {
-                swedish: "Hur mår du?",
-                english: "How are you?",
-                german: "Wie geht es dir?",
-                french: "Comment allez-vous?"
+        async function translateSentence() {
+            const input = document.getElementById('sentenceInput').value.trim();
+            const btn = document.getElementById('translateBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            if (!input) {
+                errorMsg.textContent = 'Please enter a sentence to translate';
+                return;
             }
-        };
 
-        function translateSentence() {
-            const input = document.getElementById('sentenceInput').value.toLowerCase().trim();
-            const translation = translations[input];
+            errorMsg.textContent = '';
+            btn.disabled = true;
+            btn.textContent = 'Translating...';
 
-            if (translation) {
-                document.getElementById('swedish').textContent = translation.swedish;
-                document.getElementById('english').textContent = translation.english;
-                document.getElementById('german').textContent = translation.german;
-                document.getElementById('french').textContent = translation.french;
-            } else {
-                const message = "Translation not available. Try: 'hej verden', 'godmorgen', 'mange tak', or 'hvordan har du det'";
-                ['swedish', 'english', 'german', 'french'].forEach(lang => {
-                    document.getElementById(lang).textContent = message;
+            const languages = ['swedish', 'english', 'german', 'french'];
+            const languageNames = {
+                swedish: 'Swedish',
+                english: 'English', 
+                german: 'German',
+                french: 'French'
+            };
+
+            languages.forEach(lang => {
+                const el = document.getElementById(lang);
+                el.textContent = 'Translating...';
+                el.classList.add('loading');
+            });
+
+            try {
+                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        model: "claude-sonnet-4-20250514",
+                        max_tokens: 1000,
+                        messages: [{
+                            role: "user",
+                            content: `Translate this Danish sentence to Swedish, English, German, and French. Return ONLY a JSON object with this exact format, no other text:
+{
+  "swedish": "translation here",
+  "english": "translation here", 
+  "german": "translation here",
+  "french": "translation here"
+}
+
+Danish sentence: "${input}"`
+                        }]
+                    })
                 });
+
+                if (!response.ok) {
+                    throw new Error('Translation failed');
+                }
+
+                const data = await response.json();
+                const text = data.content[0].text;
+                const cleanText = text.replace(/```json|```/g, '').trim();
+                const translations = JSON.parse(cleanText);
+
+                languages.forEach(lang => {
+                    const el = document.getElementById(lang);
+                    el.textContent = translations[lang];
+                    el.classList.remove('loading');
+                });
+
+            } catch (error) {
+                console.error('Translation error:', error);
+                errorMsg.textContent = 'Translation failed. Please try again.';
+                
+                languages.forEach(lang => {
+                    const el = document.getElementById(lang);
+                    el.textContent = 'Translation unavailable';
+                    el.classList.remove('loading');
+                });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Translate';
             }
         }
     </script>
