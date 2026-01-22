@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Comparison Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .languages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .language-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .language-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .language-name {
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .flag {
+            font-size: 1.5em;
+        }
+
+        .translation {
+            color: #333;
+            font-size: 1.1em;
+            line-height: 1.5;
+            font-style: italic;
+        }
+
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 15px;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 Language Comparison Tool</h1>
+        <p class="subtitle">Compare sentences across Danish, Swedish, English, German & French</p>
+        
+        <div class="input-section">
+            <label for="sentenceInput">Enter your sentence in Danish:</label>
+            <input type="text" id="sentenceInput" placeholder="e.g., Jeg elsker at lære sprog" value="Jeg elsker at lære sprog">
+            <button class="button" onclick="translateSentence()">Translate</button>
+        </div>
+
+        <div class="languages-grid" id="translationsGrid">
+            <div class="language-card">
+                <div class="language-name"><span class="flag">🇸🇪</span> Swedish</div>
+                <div class="translation" id="swedish">Jag älskar att lära mig språk</div>
+            </div>
+            <div class="language-card">
+                <div class="language-name"><span class="flag">🇬🇧</span> English</div>
+                <div class="translation" id="english">I love learning languages</div>
+            </div>
+            <div class="language-card">
+                <div class="language-name"><span class="flag">🇩🇪</span> German</div>
+                <div class="translation" id="german">Ich liebe es, Sprachen zu lernen</div>
+            </div>
+            <div class="language-card">
+                <div class="language-name"><span class="flag">🇫🇷</span> French</div>
+                <div class="translation" id="french">J'adore apprendre les langues</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            "jeg elsker at lære sprog": {
+                swedish: "Jag älskar att lära mig språk",
+                english: "I love learning languages",
+                german: "Ich liebe es, Sprachen zu lernen",
+                french: "J'adore apprendre les langues"
+            },
+            "hej verden": {
+                swedish: "Hej världen",
+                english: "Hello world",
+                german: "Hallo Welt",
+                french: "Bonjour le monde"
+            },
+            "godmorgen": {
+                swedish: "God morgon",
+                english: "Good morning",
+                german: "Guten Morgen",
+                french: "Bonjour"
+            },
+            "mange tak": {
+                swedish: "Tack så mycket",
+                english: "Thank you very much",
+                german: "Vielen Dank",
+                french: "Merci beaucoup"
+            },
+            "hvordan har du det": {
+                swedish: "Hur mår du?",
+                english: "How are you?",
+                german: "Wie geht es dir?",
+                french: "Comment allez-vous?"
+            }
+        };
+
+        function translateSentence() {
+            const input = document.getElementById('sentenceInput').value.toLowerCase().trim();
+            const translation = translations[input];
+
+            if (translation) {
+                document.getElementById('swedish').textContent = translation.swedish;
+                document.getElementById('english').textContent = translation.english;
+                document.getElementById('german').textContent = translation.german;
+                document.getElementById('french').textContent = translation.french;
+            } else {
+                const message = "Translation not available. Try: 'hej verden', 'godmorgen', 'mange tak', or 'hvordan har du det'";
+                ['swedish', 'english', 'german', 'french'].forEach(lang => {
+                    document.getElementById(lang).textContent = message;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
